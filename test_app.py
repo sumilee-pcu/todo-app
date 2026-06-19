@@ -21,3 +21,16 @@ def test_add_todo():
     body = res.get_json()
     assert body["title"] == "원고 마감"
     assert body["done"] is False
+
+
+def test_add_todo_with_priority():
+    res = client().post("/api/todos", json={"title": "교정", "priority": "높음"})
+    assert res.get_json()["priority"] == "높음"
+
+
+def test_toggle_done():
+    c = client()
+    todo = c.post("/api/todos", json={"title": "탈고"}).get_json()
+    res = c.post(f"/api/todos/{todo['id']}/toggle")
+    assert res.status_code == 200
+    assert res.get_json()["done"] is True
