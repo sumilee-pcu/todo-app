@@ -1,5 +1,131 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><title>할 일 목록</title></head>
-<body><h1>할 일 목록</h1></body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>할 일 목록 (서버 저장형)</title>
+  <style>
+    :root{
+      --bg:#0a0b0f; --surface:#13151c; --line:#23262f;
+      --text:#e7e9ee; --muted:#8b909c; --accent:#3ee7d1; --violet:#9a8bff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+      font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      display:flex; justify-content:center; padding:48px 20px;
+    }
+    .wrap{width:100%; max-width:560px}
+    .badge{
+      display:inline-block; font-size:12px; letter-spacing:.04em; color:var(--accent);
+      border:1px solid var(--line); border-radius:999px; padding:4px 12px; margin-bottom:14px;
+    }
+    h1{font-size:28px; margin:0 0 6px}
+    .sub{color:var(--muted); font-size:14px; margin:0 0 26px}
+    .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:20px}
+    form{display:flex; gap:8px; margin-bottom:18px}
+    input[type=text]{
+      flex:1; background:#0e1016; border:1px solid var(--line); color:var(--text);
+      border-radius:10px; padding:11px 13px; font-size:15px; outline:none;
+    }
+    input[type=text]:focus{border-color:var(--accent)}
+    select{
+      background:#0e1016; border:1px solid var(--line); color:var(--text);
+      border-radius:10px; padding:0 10px; font-size:14px;
+    }
+    button{
+      background:linear-gradient(100deg,var(--accent),var(--violet)); color:#06070a;
+      border:none; border-radius:10px; padding:0 16px; font-size:15px; font-weight:700; cursor:pointer;
+    }
+    ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+    li{
+      display:flex; align-items:center; gap:12px; background:#0e1016;
+      border:1px solid var(--line); border-radius:10px; padding:12px 14px;
+    }
+    li .title{flex:1; font-size:15px}
+    li.done .title{text-decoration:line-through; color:var(--muted)}
+    .pri{font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:2px 7px}
+    .chk{width:20px; height:20px; cursor:pointer; accent-color:var(--accent)}
+    .empty{color:var(--muted); font-size:14px; text-align:center; padding:18px 0}
+    .foot{color:var(--muted); font-size:12px; margin-top:16px; line-height:1.6}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <span class="badge">RENDER · 서버 저장형</span>
+    <h1>할 일 목록</h1>
+    <p class="sub">이 목록은 브라우저가 아니라 서버에 저장됩니다. 다른 기기에서 열어도 같은 목록이 보입니다.</p>
+    <div class="card">
+      <form id="add-form">
+        <input type="text" id="title" placeholder="할 일을 입력하세요" autocomplete="off" required>
+        <select id="priority">
+          <option>높음</option>
+          <option selected>보통</option>
+          <option>낮음</option>
+        </select>
+        <button type="submit">추가</button>
+      </form>
+      <ul id="list"></ul>
+      <div class="empty" id="empty" hidden>아직 할 일이 없습니다. 위에서 추가해 보세요.</div>
+    </div>
+    <p class="foot">
+      서버 API: GET·POST /api/todos, POST /api/todos/&lt;id&gt;/toggle<br>
+      무료 서버라 데이터는 서버 재시작 시 초기화됩니다.
+    </p>
+  </div>
+
+  <script>
+    const listEl = document.getElementById('list');
+    const emptyEl = document.getElementById('empty');
+
+    async function load(){
+      const res = await fetch('/api/todos');
+      const todos = await res.json();
+      render(todos);
+    }
+
+    function render(todos){
+      listEl.innerHTML = '';
+      emptyEl.hidden = todos.length > 0;
+      for(const t of todos){
+        const li = document.createElement('li');
+        if(t.done) li.classList.add('done');
+        li.innerHTML =
+          '<input type="checkbox" class="chk"' + (t.done ? ' checked' : '') + '>' +
+          '<span class="title"></span>' +
+          '<span class="pri"></span>';
+        li.querySelector('.title').textContent = t.title;
+        li.querySelector('.pri').textContent = t.priority;
+        li.querySelector('.chk').addEventListener('change', () => toggle(t.id));
+        listEl.appendChild(li);
+      }
+    }
+
+    async function add(title, priority){
+      await fetch('/api/todos', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({title, priority})
+      });
+      load();
+    }
+
+    async function toggle(id){
+      await fetch('/api/todos/' + id + '/toggle', {method:'POST'});
+      load();
+    }
+
+    document.getElementById('add-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const titleEl = document.getElementById('title');
+      const title = titleEl.value.trim();
+      if(!title) return;
+      add(title, document.getElementById('priority').value);
+      titleEl.value = '';
+      titleEl.focus();
+    });
+
+    load();
+  </script>
+</body>
 </html>
