@@ -34,3 +34,16 @@ def test_toggle_done():
     res = c.post(f"/api/todos/{todo['id']}/toggle")
     assert res.status_code == 200
     assert res.get_json()["done"] is True
+
+
+def test_delete_todo():
+    c = client()
+    todo = c.post("/api/todos", json={"title": "임시"}).get_json()
+    res = c.delete(f"/api/todos/{todo['id']}")
+    assert res.status_code == 200
+    assert c.get("/api/todos").get_json() == []
+
+
+def test_delete_missing_returns_404():
+    res = client().delete("/api/todos/999")
+    assert res.status_code == 404

@@ -34,6 +34,15 @@ def toggle_todo(todo_id):
     abort(404, description="할 일을 찾을 수 없습니다")
 
 
+@app.delete("/api/todos/<int:todo_id>")
+def delete_todo(todo_id):
+    for i, todo in enumerate(todos):
+        if todo["id"] == todo_id:
+            todos.pop(i)
+            return jsonify({"message": "삭제되었습니다"})
+    abort(404, description="할 일을 찾을 수 없습니다")
+
+
 @app.get("/")
 def index():
     return render_template("index.html", todos=todos)
